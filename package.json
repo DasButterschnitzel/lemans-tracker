@@ -12,6 +12,7 @@
     "track": "node tools/fetch-track.mjs",
     "sample": "node tools/fetch-sample.mjs"
   },
+  "packageManager": "pnpm@11.6.0",
   "engines": {
     "node": ">=20"
   }

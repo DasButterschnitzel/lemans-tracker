@@ -22,6 +22,8 @@ interface Props {
   activeClasses: Set<CarClass>;
   selected: string | null;
   onSelect: (n: string) => void;
+  follow: boolean;
+  onFollowChange: (v: boolean) => void;
 }
 
 function unwrap(target: number, from: number): number {
@@ -41,12 +43,17 @@ function buildMarkerEl(car: Car, onSelect: (n: string) => void): HTMLDivElement 
   return el;
 }
 
-export default function MapView({ state, centerline, satellite, activeClasses, selected, onSelect }: Props): JSX.Element {
+export default function MapView({ state, centerline, satellite, activeClasses, selected, onSelect, follow, onFollowChange }: Props): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const readyRef = useRef(false);
   const markers = useRef<Map<string, MarkerRec>>(new Map());
   const carsRef = useRef<Car[]>([]);
+  const followRef = useRef(follow);
+  const selRef = useRef(selected);
+  const easingRef = useRef(false);
+  followRef.current = follow;
+  selRef.current = selected;
 
   // Init map once.
   useEffect(() => {
@@ -69,7 +76,7 @@ export default function MapView({ state, centerline, satellite, activeClasses, s
     });
     mapRef.current = map;
     map.on("load", () => {
-      map.addSource("track", { type: "geojson", data: "/sarthe.geojson" });
+      map.addSource("track", { type: "geojson", data: `${import.meta.env.BASE_URL}sarthe.geojson` });
       const line = { "line-cap": "round", "line-join": "round" } as const;
       map.addLayer({ id: "track-bloom", type: "line", source: "track", layout: line, paint: { "line-color": "#2EE6FF", "line-width": 20, "line-blur": 18, "line-opacity": 0.22 } });
       map.addLayer({ id: "track-glow", type: "line", source: "track", layout: line, paint: { "line-color": "#3AE8FF", "line-width": 8, "line-blur": 6, "line-opacity": 0.6 } });
@@ -77,6 +84,7 @@ export default function MapView({ state, centerline, satellite, activeClasses, s
       readyRef.current = true;
     });
     map.on("click", () => onSelect(""));
+    map.on("dragstart", () => { if (followRef.current) onFollowChange(false); });
     return () => { map.remove(); mapRef.current = null; readyRef.current = false; markers.current.clear(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [centerline]);
@@ -110,12 +118,15 @@ export default function MapView({ state, centerline, satellite, activeClasses, s
     }
   }, [state, centerline, activeClasses, selected, onSelect]);
 
-  // Center on the selected car.
+  // Zoom to the selected car when following begins (then the rAF loop keeps it centered).
   useEffect(() => {
     const map = mapRef.current;
     const rec = selected ? markers.current.get(selected) : null;
-    if (map && rec) map.easeTo({ center: rec.marker.getLngLat(), zoom: Math.max(map.getZoom(), 14), duration: 700 });
-  }, [selected]);
+    if (!map || !rec || !follow) return;
+    easingRef.current = true;
+    map.easeTo({ center: rec.marker.getLngLat(), zoom: Math.max(map.getZoom(), 14.5), duration: 700 });
+    map.once("moveend", () => { easingRef.current = false; });
+  }, [selected, follow]);
 
   // Animation loop: dead-reckon positions between updates.
   useEffect(() => {
@@ -129,6 +140,10 @@ export default function MapView({ state, centerline, satellite, activeClasses, s
           rec.disp = (rec.disp + rec.vel * dt + 1) % 1;
           rec.marker.setLngLat(posAt(centerline, rec.disp));
         }
+      }
+      if (followRef.current && !easingRef.current && selRef.current) {
+        const rec = markers.current.get(selRef.current);
+        if (rec) mapRef.current?.setCenter(rec.marker.getLngLat());
       }
       raf = requestAnimationFrame(tick);
     };

@@ -15,6 +15,7 @@ export default function App(): JSX.Element {
   const [satellite, setSatellite] = useState(true);
   const [active, setActive] = useState<Set<CarClass>>(new Set(CLASSES));
   const [selected, setSelected] = useState<string | null>(null);
+  const [follow, setFollow] = useState(true);
 
   useEffect(() => {
     loadCenterline().then(setCenterline).catch((e) => console.error("track load failed", e));
@@ -33,20 +34,23 @@ export default function App(): JSX.Element {
       return next.size ? next : new Set(CLASSES);
     });
 
-  const onSelect = (n: string): void => setSelected((cur) => (n && n !== cur ? n : null));
+  const onSelect = (n: string): void => {
+    setSelected((cur) => (n && n !== cur ? n : null));
+    if (n) setFollow(true);
+  };
   const selectedCar = selected ? (state?.cars.find((c) => c.number === selected) ?? null) : null;
 
   return (
     <div className="absolute inset-0">
       {centerline ? (
-        <MapView state={state} centerline={centerline} satellite={satellite} activeClasses={active} selected={selected} onSelect={onSelect} />
+        <MapView state={state} centerline={centerline} satellite={satellite} activeClasses={active} selected={selected} onSelect={onSelect} follow={follow} onFollowChange={setFollow} />
       ) : (
         <div className="absolute inset-0 grid place-items-center text-white/50">
           <div className="animate-pulse text-sm tracking-widest">LOADING CIRCUIT…</div>
         </div>
       )}
       <Hud session={state?.session} status={status} source={state?.source} />
-      {selectedCar && <CarDetail car={selectedCar} onClose={() => setSelected(null)} />}
+      {selectedCar && <CarDetail car={selectedCar} follow={follow} onToggleFollow={() => setFollow((f) => !f)} onClose={() => setSelected(null)} />}
       <ControlBar satellite={satellite} onSatellite={setSatellite} active={active} onToggle={toggleClass} counts={counts} />
       <Leaderboard state={state} active={active} selected={selected} onSelect={onSelect} />
     </div>

@@ -62,6 +62,23 @@ proprietary WebSocket and is not a documented public API. Two ways to feed real 
    (Network → WS) during a live session and add an adapter in `relay/src/sources/` that maps
    its messages onto the `RaceState` schema (`relay/src/types.ts`).
 
+## Hosting on GitHub Pages
+
+The app ships with a GitHub Actions workflow (`.github/workflows/deploy.yml`) that builds the web
+app and publishes it to GitHub Pages. The hosted site is **fully self-contained**: when no relay is
+reachable it runs the simulation **entirely in your browser** (the `replay`/`live` modes still need
+the local relay). The build uses a relative base, so it works at any `…github.io/<repo>/` path.
+
+```bash
+# 1. create a PUBLIC repo and push this project to main, e.g. with the GitHub CLI:
+gh repo create lemans-live --public --source=. --push
+#    …or create an empty repo in the browser, then:
+#    git remote add origin https://github.com/<user>/lemans-live.git && git push -u origin main
+
+# 2. in the repo: Settings → Pages → Build and deployment → Source = "GitHub Actions"
+# 3. every push to main redeploys → live at https://<user>.github.io/lemans-live/
+```
+
 ## How positions are drawn
 
 Cars carry a normalised lap distance `trackPos` (0..1). The web app maps that onto the OSM

@@ -10,7 +10,14 @@ function Stat({ label, value }: { label: string; value: string }): JSX.Element {
   );
 }
 
-export default function CarDetail({ car, onClose }: { car: Car; onClose: () => void }): JSX.Element {
+interface Props {
+  car: Car;
+  follow: boolean;
+  onToggleFollow: () => void;
+  onClose: () => void;
+}
+
+export default function CarDetail({ car, follow, onToggleFollow, onClose }: Props): JSX.Element {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-[3.4rem] z-30 flex justify-center px-3 sm:right-[372px] sm:left-3 sm:justify-start">
       <div className="glass pointer-events-auto w-full max-w-md rounded-xl p-3 shadow-2xl">
@@ -25,8 +32,15 @@ export default function CarDetail({ car, onClose }: { car: Car; onClose: () => v
             <div className="truncate text-sm font-bold">{car.currentDriver}</div>
             <div className="truncate text-[11px] text-white/55">{car.team} · {car.car}</div>
           </div>
-          {car.fastest && <span className="rounded bg-[#c879ff]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#d9a8ff]">⚡ FASTEST</span>}
-          <button onClick={onClose} className="ml-1 rounded px-1.5 text-white/50 transition hover:text-white">✕</button>
+          {car.fastest && <span className="rounded bg-[#c879ff]/20 px-1.5 py-0.5 text-[10px] font-bold text-[#d9a8ff]">⚡</span>}
+          <button
+            onClick={onToggleFollow}
+            className={`rounded-md px-2 py-1 text-[11px] font-bold transition ${follow ? "bg-hyper/90 text-white" : "bg-white/10 text-white/70 hover:text-white"}`}
+            title="Keep the camera locked on this car"
+          >
+            {follow ? "◉ Following" : "◎ Follow"}
+          </button>
+          <button onClick={onClose} className="ml-0.5 rounded px-1.5 text-white/50 transition hover:text-white">✕</button>
         </div>
         <div className="mt-3 grid grid-cols-4 gap-2">
           <Stat label="Overall" value={`P${car.posOverall}`} />

@@ -1,0 +1,18 @@
+{
+  "name": "lemans-live",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Le Mans 24h live tracker — satellite track map + real-time car positions and timing",
+  "scripts": {
+    "dev": "corepack pnpm --filter relay dev",
+    "dev:web": "corepack pnpm --filter web dev",
+    "build": "corepack pnpm --filter web build && corepack pnpm --filter relay build",
+    "start": "corepack pnpm --filter relay start",
+    "serve": "corepack pnpm build && corepack pnpm --filter relay start",
+    "track": "node tools/fetch-track.mjs",
+    "sample": "node tools/fetch-sample.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

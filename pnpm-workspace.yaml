@@ -1,0 +1,5 @@
+packages:
+  - "relay"
+  - "web"
+allowBuilds:
+  esbuild: true

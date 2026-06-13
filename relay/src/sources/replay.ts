@@ -8,6 +8,7 @@ import { loadEntryList } from "../entrylist.js";
 import { buildStanding } from "../standings.js";
 import { scoreTimelineAt } from "../timeline.js";
 import { fmtClock } from "../util.js";
+import { weatherFor } from "../weather.js";
 
 const TICK_MS = 250;
 const SPEED = Number(process.env.REPLAY_SPEED ?? 1);
@@ -22,12 +23,15 @@ export function createReplaySource(): RaceSource {
   let last = Date.now();
   let timer: ReturnType<typeof setInterval> | null = null;
 
-  const buildState = (): RaceState => ({
-    session: { name: "Le Mans 2026 · Free Practice (replay)", flag: "GREEN", elapsed: fmtClock(t / 1000), remaining: fmtClock((sessionEnd - t) / 1000), weather: "Dry" },
-    cars: buildStanding(timelines.map((tl) => scoreTimelineAt(tl, ids.get(tl.number), t))),
-    updatedAt: Date.now(),
-    source: "replay",
-  });
+  const buildState = (): RaceState => {
+    const w = weatherFor(Date.now(), t / 1000, 14);
+    return {
+      session: { name: "Le Mans 2026 · Free Practice (replay)", flag: "GREEN", elapsed: fmtClock(t / 1000), remaining: fmtClock((sessionEnd - t) / 1000), trackTemp: w.trackTemp, airTemp: w.airTemp, condition: w.condition, weather: w.condition, timeOfDay: w.timeOfDay, night: w.night },
+      cars: buildStanding(timelines.map((tl) => scoreTimelineAt(tl, ids.get(tl.number), t))),
+      updatedAt: Date.now(),
+      source: "replay",
+    };
+  };
 
   return {
     kind: "replay",

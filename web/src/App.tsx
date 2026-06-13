@@ -16,9 +16,14 @@ export default function App(): JSX.Element {
   const [active, setActive] = useState<Set<CarClass>>(new Set(CLASSES));
   const [selected, setSelected] = useState<string | null>(null);
   const [follow, setFollow] = useState(true);
+  const [rosters, setRosters] = useState<Map<string, string[]>>(new Map());
 
   useEffect(() => {
     loadCenterline().then(setCenterline).catch((e) => console.error("track load failed", e));
+    fetch(`${import.meta.env.BASE_URL}entrylist-2026.json`)
+      .then((r) => r.json())
+      .then((d: { cars: { number: string; drivers: string[] }[] }) => setRosters(new Map(d.cars.map((c) => [c.number, c.drivers]))))
+      .catch(() => {});
   }, []);
 
   const counts = useMemo(() => {
@@ -43,14 +48,14 @@ export default function App(): JSX.Element {
   return (
     <div className="absolute inset-0">
       {centerline ? (
-        <MapView state={state} centerline={centerline} satellite={satellite} activeClasses={active} selected={selected} onSelect={onSelect} follow={follow} onFollowChange={setFollow} />
+        <MapView state={state} centerline={centerline} satellite={satellite} activeClasses={active} selected={selected} onSelect={onSelect} follow={follow} onFollowChange={setFollow} night={!!state?.session.night} />
       ) : (
         <div className="absolute inset-0 grid place-items-center text-white/50">
           <div className="animate-pulse text-sm tracking-widest">LOADING CIRCUIT…</div>
         </div>
       )}
       <Hud session={state?.session} status={status} source={state?.source} />
-      {selectedCar && <CarDetail car={selectedCar} follow={follow} onToggleFollow={() => setFollow((f) => !f)} onClose={() => setSelected(null)} />}
+      {selectedCar && <CarDetail car={selectedCar} drivers={rosters.get(selectedCar.number)} follow={follow} onToggleFollow={() => setFollow((f) => !f)} onClose={() => setSelected(null)} />}
       <ControlBar satellite={satellite} onSatellite={setSatellite} active={active} onToggle={toggleClass} counts={counts} />
       <Leaderboard state={state} active={active} selected={selected} onSelect={onSelect} />
     </div>

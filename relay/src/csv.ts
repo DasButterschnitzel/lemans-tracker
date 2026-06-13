@@ -12,6 +12,7 @@ export interface LapRow {
   topSpeed: number;
   driver: string;
   inPit: boolean;
+  pitMs: number;
 }
 
 export interface CarTimeline {
@@ -48,7 +49,7 @@ export function parseAnalysisCsv(text: string): Map<string, CarTimeline> {
   const c = {
     num: ix("NUMBER"), lap: ix("LAP_NUMBER"), time: ix("LAP_TIME"), pit: ix("CROSSING_FINISH_LINE_IN_PIT"),
     s1: ix("S1"), s2: ix("S2"), s3: ix("S3"), kph: ix("KPH"), el: ix("ELAPSED"), top: ix("TOP_SPEED"),
-    drv: ix("DRIVER_NAME"), cls: ix("CLASS"), team: ix("TEAM"), man: ix("MANUFACTURER"),
+    drv: ix("DRIVER_NAME"), cls: ix("CLASS"), team: ix("TEAM"), man: ix("MANUFACTURER"), pitTime: ix("PIT_TIME"),
   };
   const out = new Map<string, CarTimeline>();
   for (const line of lines.slice(1)) {
@@ -64,6 +65,7 @@ export function parseAnalysisCsv(text: string): Map<string, CarTimeline> {
       s1: f[c.s1]?.trim(), s2: f[c.s2]?.trim(), s3: f[c.s3]?.trim(),
       kph: Number(f[c.kph]) || 0, topSpeed: Number(f[c.top]) || 0,
       driver: (f[c.drv] ?? "").trim(), inPit: (f[c.pit] ?? "").trim().length > 0,
+      pitMs: parseTime(f[c.pitTime]),
     });
     out.set(number, car);
   }

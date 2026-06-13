@@ -10,6 +10,11 @@ export interface Sectors {
   s3?: string;
 }
 
+export interface PitStop {
+  lap: number;
+  sec?: number;
+}
+
 export interface Car {
   number: string;
   carClass: CarClass;
@@ -29,6 +34,7 @@ export interface Car {
   kph?: number;
   inPit: boolean;
   pitStops: number;
+  pitHistory?: PitStop[];
   tyreAge?: number;
   /** Normalised lap distance 0..1 from start/finish (preferred for smooth placement). */
   trackPos?: number;
@@ -44,7 +50,11 @@ export interface Session {
   elapsed: string;
   remaining: string;
   trackTemp?: number;
+  airTemp?: number;
   weather?: string;
+  condition?: string;
+  timeOfDay?: string;
+  night?: boolean;
 }
 
 export interface RaceState {

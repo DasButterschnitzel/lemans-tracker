@@ -5,6 +5,7 @@ import { loadEntryList, type Entry } from "../entrylist.js";
 import { buildStanding } from "../standings.js";
 import { scoreTimelineAt } from "../timeline.js";
 import { fmtClock } from "../util.js";
+import { weatherFor } from "../weather.js";
 import { createSimSource } from "./sim.js";
 
 const TICK_MS = 250;
@@ -55,8 +56,9 @@ export function createLiveSource(): RaceSource {
 
   const buildState = (): RaceState => {
     const t = baseElapsed + (Date.now() - fetchedAt); // dead-reckon between polls
+    const w = weatherFor(Date.now(), t / 1000, 16);
     return {
-      session: { name: "24 Hours of Le Mans · LIVE", flag: "GREEN", elapsed: fmtClock(t / 1000), remaining: fmtClock(RACE_HOURS - t / 1000), weather: "—" },
+      session: { name: "24 Hours of Le Mans · LIVE", flag: "GREEN", elapsed: fmtClock(t / 1000), remaining: fmtClock(RACE_HOURS - t / 1000), trackTemp: w.trackTemp, airTemp: w.airTemp, condition: w.condition, weather: w.condition, timeOfDay: w.timeOfDay, night: w.night },
       cars: buildStanding(timelines.map((tl) => scoreTimelineAt(tl, ids.get(tl.number), t))),
       updatedAt: Date.now(),
       source: "live",

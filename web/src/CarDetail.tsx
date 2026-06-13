@@ -10,14 +10,23 @@ function Stat({ label, value }: { label: string; value: string }): JSX.Element {
   );
 }
 
+const lastName = (n: string): string => n.trim().split(/\s+/).pop()!.toLocaleLowerCase();
+const isCurrent = (d: string, cur: string): boolean => lastName(d) === lastName(cur);
+
 interface Props {
   car: Car;
+  drivers?: string[];
   follow: boolean;
   onToggleFollow: () => void;
   onClose: () => void;
 }
 
-export default function CarDetail({ car, follow, onToggleFollow, onClose }: Props): JSX.Element {
+export default function CarDetail({ car, drivers, follow, onToggleFollow, onClose }: Props): JSX.Element {
+  const pits = car.pitHistory ?? [];
+  const lastPitLap = pits.length ? Math.max(...pits.map((p) => p.lap)) : 0;
+  const stint = lastPitLap ? Math.max(0, car.lap - lastPitLap) : car.lap;
+  const recent = pits.slice(-6);
+
   return (
     <div className="pointer-events-none absolute inset-x-0 top-[3.4rem] z-30 flex justify-center px-3 sm:right-[372px] sm:left-3 sm:justify-start">
       <div className="glass pointer-events-auto w-full max-w-md rounded-xl p-3 shadow-2xl">
@@ -42,6 +51,7 @@ export default function CarDetail({ car, follow, onToggleFollow, onClose }: Prop
           </button>
           <button onClick={onClose} className="ml-0.5 rounded px-1.5 text-white/50 transition hover:text-white">✕</button>
         </div>
+
         <div className="mt-3 grid grid-cols-4 gap-2">
           <Stat label="Overall" value={`P${car.posOverall}`} />
           <Stat label="Class" value={`P${car.posClass}`} />
@@ -50,9 +60,40 @@ export default function CarDetail({ car, follow, onToggleFollow, onClose }: Prop
           <Stat label="Last" value={car.lastLap ?? "--"} />
           <Stat label="Best" value={car.bestLap ?? "--"} />
           <Stat label="Speed" value={car.kph ? `${car.kph} kph` : "--"} />
-          <Stat label="Pits" value={String(car.pitStops)} />
+          <Stat label="Stint" value={`${stint} L`} />
         </div>
-        {car.inPit && <div className="mt-2 inline-block rounded bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-300">IN PIT LANE</div>}
+
+        {drivers && drivers.length > 0 && (
+          <div className="mt-3">
+            <div className="mb-1 text-[9px] uppercase tracking-widest text-white/40">Drivers</div>
+            <div className="flex flex-wrap gap-1.5">
+              {drivers.map((d) => {
+                const cur = isCurrent(d, car.currentDriver);
+                return (
+                  <span key={d} className={`rounded px-2 py-0.5 text-[11px] ${cur ? "bg-white/15 font-semibold text-white" : "bg-white/[0.05] text-white/60"}`}>
+                    {cur && <span className="mr-1 text-emerald-400">●</span>}{d}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {pits.length > 0 && (
+          <div className="mt-3">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-[9px] uppercase tracking-widest text-white/40">Pit stops · {car.pitStops}</span>
+              {car.inPit && <span className="rounded bg-amber-400/20 px-1.5 text-[10px] font-bold text-amber-300">IN PIT</span>}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {recent.map((p, i) => (
+                <span key={i} className="rounded bg-white/[0.05] px-1.5 py-0.5 font-mono text-[10px] text-white/65">
+                  L{p.lap}{p.sec ? ` · ${p.sec}s` : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

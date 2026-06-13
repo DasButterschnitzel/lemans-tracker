@@ -1,4 +1,4 @@
-import type { Car, CarClass } from "./types.js";
+import type { Car, CarClass, PitStop } from "./types.js";
 import { fmtGap, fmtLap } from "./util.js";
 
 export const CLASS_LAP_REF: Record<CarClass, number> = { HYPERCAR: 210, LMP2: 222, LMGT3: 240 };
@@ -20,6 +20,7 @@ export interface Scored {
   kph: number;
   topSpeed: number;
   tyreAge?: number;
+  pitHistory?: PitStop[];
 }
 
 function mapToCar(s: Scored, posOverall: number, posClass: number, leaderDist: number, aheadDist: number, ref: number, fastestNum: string): Car {
@@ -41,6 +42,7 @@ function mapToCar(s: Scored, posOverall: number, posClass: number, leaderDist: n
     kph: s.kph,
     inPit: s.inPit,
     pitStops: s.pitStops,
+    pitHistory: s.pitHistory,
     tyreAge: s.tyreAge,
     trackPos: s.trackPos,
     fastest: s.number === fastestNum && s.bestLapMs > 0,

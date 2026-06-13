@@ -38,3 +38,16 @@ export function fmtGap(lapDiff: number, lapSec: number): string {
 }
 
 export const randIn = (lo: number, hi: number): number => lo + Math.random() * (hi - lo);
+
+const PARTICLES = new Set(["de", "del", "della", "van", "von", "der", "di", "da", "dos", "du", "la", "le", "den", "ter", "ten", "bin", "al", "y"]);
+const capWord = (w: string): string => w.split("-").map((t) => (t ? t.charAt(0).toLocaleUpperCase() + t.slice(1) : t)).join("-");
+
+/** Normalises a raw "Kevin MAGNUSSEN" timing name to "Kevin Magnussen" (accents kept). */
+export function niceName(raw: string | undefined): string {
+  const s = (raw ?? "").trim().replace(/\s+/g, " ");
+  if (!s) return "";
+  return s.split(" ").map((p, i) => {
+    const low = p.toLocaleLowerCase();
+    return i > 0 && PARTICLES.has(low) ? low : capWord(low);
+  }).join(" ");
+}

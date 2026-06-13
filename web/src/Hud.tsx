@@ -16,6 +16,14 @@ interface Props {
   source: string | undefined;
 }
 
+function weatherIcon(condition: string | undefined, night: boolean | undefined): string {
+  if (condition && /rain/i.test(condition)) return "🌧️";
+  if (night) return "🌙";
+  if (condition === "Partly Cloudy") return "⛅";
+  if (condition === "Cloudy") return "☁️";
+  return "☀️";
+}
+
 export default function Hud({ session, status, source }: Props): JSX.Element {
   const flag = FLAG[session?.flag ?? "GREEN"];
   const dot = status === "live" ? "#25E07A" : status === "connecting" ? "#FFD23F" : "#FF3B3B";
@@ -32,6 +40,20 @@ export default function Hud({ session, status, source }: Props): JSX.Element {
             </div>
           </div>
         </div>
+
+        {session?.condition && (
+          <div className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-2 py-1">
+            <span className="text-base leading-none sm:text-lg">{weatherIcon(session.condition, session.night)}</span>
+            <div className="leading-tight">
+              <div className="font-mono text-[12px] font-semibold tabular-nums">{session.timeOfDay ?? "--:--"}</div>
+              <div className="hidden text-[9px] text-white/50 sm:block">{session.condition}</div>
+            </div>
+            <div className="hidden text-right leading-tight sm:block">
+              <div className="font-mono text-[12px] font-semibold tabular-nums text-white/85">{session.trackTemp ?? "--"}°</div>
+              <div className="text-[9px] text-white/45">track</div>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 sm:gap-5">
           <div className="text-right leading-none">

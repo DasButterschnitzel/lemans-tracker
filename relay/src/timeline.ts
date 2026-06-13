@@ -1,6 +1,8 @@
 import type { CarTimeline } from "./csv.js";
 import type { Entry } from "./entrylist.js";
 import type { Scored } from "./standings.js";
+import type { PitStop } from "./types.js";
+import { niceName } from "./util.js";
 
 // Index of the lap in progress at session time t (ms): first lap not yet completed.
 function lapInProgress(laps: CarTimeline["laps"], t: number): number {
@@ -32,12 +34,15 @@ export function scoreTimelineAt(tl: CarTimeline, id: Entry | undefined, t: numbe
   const trackPos = onTrack ? Math.min(1, Math.max(0, (t - cur!.startMs) / (cur!.lapMs || 1))) : 0;
   const lap = done ? tl.laps.length : Math.max(0, (cur?.lap ?? 1) - 1);
   const ref = cur ?? prev;
+  const pitHistory: PitStop[] = tl.laps
+    .filter((l) => l.elapsedMs <= t && l.pitMs > 0)
+    .map((l) => ({ lap: l.lap, sec: Math.round(l.pitMs / 100) / 10 }));
   return {
     number: tl.number, carClass: tl.carClass, team: id?.team ?? tl.team, car: id?.car ?? tl.manufacturer,
-    manufacturer: tl.manufacturer || id?.manufacturer || "", driver: ref?.driver || id?.drivers[0] || "",
+    manufacturer: tl.manufacturer || id?.manufacturer || "", driver: niceName(ref?.driver) || id?.drivers[0] || "",
     dist: lap + trackPos, lap, trackPos,
-    inPit: done || !onTrack || !!cur?.inPit, pitStops: tl.laps.filter((l) => l.elapsedMs <= t && l.inPit).length,
+    inPit: done || !onTrack || !!cur?.inPit, pitStops: pitHistory.length,
     lastLapMs: prev?.lapMs ?? 0, bestLapMs: bestUpTo(tl.laps, t),
-    kph: onTrack ? cur!.kph : 0, topSpeed: ref?.topSpeed ?? 0,
+    kph: onTrack ? cur!.kph : 0, topSpeed: ref?.topSpeed ?? 0, pitHistory,
   };
 }

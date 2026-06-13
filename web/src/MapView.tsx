@@ -24,6 +24,7 @@ interface Props {
   onSelect: (n: string) => void;
   follow: boolean;
   onFollowChange: (v: boolean) => void;
+  night: boolean;
 }
 
 function unwrap(target: number, from: number): number {
@@ -43,7 +44,7 @@ function buildMarkerEl(car: Car, onSelect: (n: string) => void): HTMLDivElement 
   return el;
 }
 
-export default function MapView({ state, centerline, satellite, activeClasses, selected, onSelect, follow, onFollowChange }: Props): JSX.Element {
+export default function MapView({ state, centerline, satellite, activeClasses, selected, onSelect, follow, onFollowChange, night }: Props): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const readyRef = useRef(false);
@@ -89,11 +90,16 @@ export default function MapView({ state, centerline, satellite, activeClasses, s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [centerline]);
 
-  // Toggle satellite vs schematic (dark) base.
+  // Toggle satellite vs schematic (dark) base, and darken the imagery at night so
+  // the neon track and cars stand out.
   useEffect(() => {
     const map = mapRef.current;
-    if (map && map.getLayer("sat")) map.setLayoutProperty("sat", "visibility", satellite ? "visible" : "none");
-  }, [satellite, state]);
+    if (!map || !map.getLayer("sat")) return;
+    map.setLayoutProperty("sat", "visibility", satellite ? "visible" : "none");
+    map.setPaintProperty("sat", "raster-brightness-max", night ? 0.34 : 0.82);
+    map.setPaintProperty("sat", "raster-saturation", night ? -0.4 : -0.22);
+    map.setPaintProperty("sat", "raster-contrast", night ? 0.12 : 0.05);
+  }, [satellite, night, state]);
 
   // Sync markers + per-car velocity on each state update.
   useEffect(() => {

@@ -68,27 +68,27 @@ function crossLine(c: SimCar, now: number): void {
   }
 }
 
-function advance(c: SimCar, dtSec: number, now: number): void {
+function advance(c: SimCar, dtSec: number, now: number, paceMul: number): void {
   if (c.inPit) {
     if (now < c.pitUntil) return;
     c.inPit = false;
     c.lastCrossTime = now;
   }
-  c.dist += dtSec / c.curLapSec;
+  c.dist += dtSec / (c.curLapSec * paceMul);
   if (Math.floor(c.dist) > c.lap) crossLine(c, now);
 }
 
-function kphOf(c: SimCar, lapKm: number): number {
+function kphOf(c: SimCar, lapKm: number, paceMul: number): number {
   if (c.inPit) return Math.round(randIn(55, 80));
-  return Math.round((lapKm / (c.curLapSec / 3600)) * randIn(0.98, 1.02));
+  return Math.round((lapKm / ((c.curLapSec * paceMul) / 3600)) * randIn(0.98, 1.02));
 }
 
-function scoreCars(cars: SimCar[], lapKm: number): Scored[] {
+function scoreCars(cars: SimCar[], lapKm: number, paceMul: number): Scored[] {
   return cars.map((c) => ({
     number: c.entry.number, carClass: c.entry.carClass, team: c.entry.team, car: c.entry.car,
     manufacturer: c.entry.manufacturer, driver: c.entry.drivers[c.driverIdx] ?? c.entry.drivers[0]!,
     dist: c.dist, lap: c.lap, trackPos: c.dist - Math.floor(c.dist), inPit: c.inPit, pitStops: c.pitStops,
-    lastLapMs: c.lastLapMs, bestLapMs: c.bestLapMs, kph: kphOf(c, lapKm),
+    lastLapMs: c.lastLapMs, bestLapMs: c.bestLapMs, kph: kphOf(c, lapKm, paceMul),
     topSpeed: c.entry.carClass === "LMGT3" ? 280 : c.entry.carClass === "LMP2" ? 305 : 330,
     tyreAge: Math.max(0, c.lap - (c.nextPitLap - 39)), pitHistory: c.pitHistory,
   }));
@@ -101,6 +101,7 @@ export function createSimSource(): RaceSource {
   let last = Date.now();
   let startTime = 0;
   let flag: FlagState = "GREEN";
+  let paceMul = 1;
 
   const buildState = (now: number): RaceState => {
     const elapsed = (now - startTime) / 1000;
@@ -109,7 +110,7 @@ export function createSimSource(): RaceSource {
       name: "24 Hours of Le Mans", flag, elapsed: fmtClock(elapsed), remaining: fmtClock(24 * 3600 - elapsed),
       trackTemp: w.trackTemp, airTemp: w.airTemp, condition: w.condition, weather: w.condition, timeOfDay: w.timeOfDay, night: w.night,
     };
-    return { session, cars: buildStanding(scoreCars(cars, track.lengthKm)), updatedAt: now, source: "sim" };
+    return { session, cars: buildStanding(scoreCars(cars, track.lengthKm, paceMul)), updatedAt: now, source: "sim" };
   };
 
   return {
@@ -123,8 +124,10 @@ export function createSimSource(): RaceSource {
         const t = Date.now();
         const dt = (t - last) / 1000;
         last = t;
+        const wet = /rain/i.test(weatherFor(t, (t - startTime) / 1000).condition);
+        paceMul = wet ? 1.09 : 1; // rain slows the field (and lengthens lap times)
         flag = Math.random() < 0.0008 ? "FCY" : flag === "FCY" && Math.random() < 0.02 ? "GREEN" : flag;
-        for (const c of cars) advance(c, dt, t);
+        for (const c of cars) advance(c, dt, t, paceMul);
         emit(buildState(t));
       }, TICK_MS);
     },

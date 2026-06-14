@@ -100,3 +100,15 @@ html, body, #root {
   100% { background-position: 40px 0; }
 }
 .flag-strip { animation: flagflow 1s linear infinite; }
+
+/* Rain overlay (shown when the weather condition is wet) */
+.rain-overlay {
+  background-image: repeating-linear-gradient(108deg, rgba(190, 205, 255, 0.11) 0 1px, transparent 1px 8px);
+  background-size: 16px 16px;
+  opacity: 0.5;
+  animation: rainfall 0.55s linear infinite;
+}
+@keyframes rainfall {
+  from { background-position: 0 0; }
+  to { background-position: -22px 64px; }
+}

@@ -58,9 +58,9 @@ function build(e: Entry, now: number): SimCar {
   return { e, base, cur: base * rnd(0.99, 1.03), dist, lap: Math.floor(dist), lastCross: now, lastLapMs: best * rnd(1, 1.04), bestLapMs: best, pits, pitHist, inPit: false, pitUntil: 0, nextPit: Math.floor(dist) + Math.round(rnd(2, STINT)), drv: Math.floor(pits / 3) % Math.max(1, e.drivers.length) };
 }
 
-function advance(c: SimCar, dt: number, now: number): void {
+function advance(c: SimCar, dt: number, now: number, paceMul: number): void {
   if (c.inPit) { if (now < c.pitUntil) return; c.inPit = false; c.lastCross = now; }
-  c.dist += dt / c.cur;
+  c.dist += dt / (c.cur * paceMul);
   if (Math.floor(c.dist) > c.lap) {
     c.lap = Math.floor(c.dist);
     const lapMs = now - c.lastCross; c.lastCross = now;
@@ -70,7 +70,7 @@ function advance(c: SimCar, dt: number, now: number): void {
   }
 }
 
-function toCars(sim: SimCar[]): Car[] {
+function toCars(sim: SimCar[], paceMul: number): Car[] {
   const fast = sim.reduce((a, b) => (b.bestLapMs < a.bestLapMs ? b : a));
   const byDist = [...sim].sort((a, b) => b.dist - a.dist);
   const overall = new Map(byDist.map((c, i) => [c.e.number, i + 1]));
@@ -87,7 +87,7 @@ function toCars(sim: SimCar[]): Car[] {
         gapLeader: i === 0 ? "LEADER" : fmtGap(leader - c.dist, ref), gapAhead: i === 0 ? "—" : fmtGap(ahead - c.dist, ref),
         lap: c.lap, lastLap: fmtLap(c.lastLapMs), bestLap: fmtLap(c.bestLapMs),
         topSpeed: c.e.class === "LMGT3" ? 280 : c.e.class === "LMP2" ? 305 : 330,
-        kph: c.inPit ? Math.round(rnd(55, 80)) : Math.round(LAP_KM / (c.cur / 3600)),
+        kph: c.inPit ? Math.round(rnd(55, 80)) : Math.round(LAP_KM / ((c.cur * paceMul) / 3600)),
         inPit: c.inPit, pitStops: c.pits, pitHistory: c.pitHist, tyreAge: Math.max(0, c.lap - (c.nextPit - 39)),
         trackPos: c.dist - Math.floor(c.dist), fastest: c.e.number === fast.e.number,
       });
@@ -116,10 +116,11 @@ export function createSimEngine(): Engine {
       timer = setInterval(() => {
         const t = Date.now(); const dt = (t - last) / 1000; last = t;
         flag = Math.random() < 0.0008 ? "FCY" : flag === "FCY" && Math.random() < 0.02 ? "GREEN" : flag;
-        for (const c of cars) advance(c, dt, t);
         const elapsed = (t - startTime) / 1000;
         const w = weatherFor(t, elapsed);
-        emit({ session: { name: "24 Hours of Le Mans", flag, elapsed: fmtClock(elapsed), remaining: fmtClock(24 * 3600 - elapsed), trackTemp: w.trackTemp, airTemp: w.airTemp, condition: w.condition, weather: w.condition, timeOfDay: w.timeOfDay, night: w.night }, cars: toCars(cars), updatedAt: t, source: "sim" });
+        const paceMul = /rain/i.test(w.condition) ? 1.09 : 1;
+        for (const c of cars) advance(c, dt, t, paceMul);
+        emit({ session: { name: "24 Hours of Le Mans", flag, elapsed: fmtClock(elapsed), remaining: fmtClock(24 * 3600 - elapsed), trackTemp: w.trackTemp, airTemp: w.airTemp, condition: w.condition, weather: w.condition, timeOfDay: w.timeOfDay, night: w.night }, cars: toCars(cars, paceMul), updatedAt: t, source: "sim" });
       }, TICK_MS);
     },
     stop() { if (timer) clearInterval(timer); timer = null; },

@@ -54,6 +54,7 @@ export default function App(): JSX.Element {
           <div className="animate-pulse text-sm tracking-widest">LOADING CIRCUIT…</div>
         </div>
       )}
+      {state?.session.condition && /rain/i.test(state.session.condition) && <div className="rain-overlay pointer-events-none absolute inset-0 z-[5]" />}
       <Hud session={state?.session} status={status} source={state?.source} />
       {selectedCar && <CarDetail car={selectedCar} drivers={rosters.get(selectedCar.number)} follow={follow} onToggleFollow={() => setFollow((f) => !f)} onClose={() => setSelected(null)} />}
       <ControlBar satellite={satellite} onSatellite={setSatellite} active={active} onToggle={toggleClass} counts={counts} />

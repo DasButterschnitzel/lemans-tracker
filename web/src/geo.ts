@@ -15,7 +15,7 @@ function haversine(a: [number, number], b: [number, number]): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-export async function loadCenterline(url = "/sarthe.geojson"): Promise<Centerline> {
+export async function loadCenterline(url = `${import.meta.env.BASE_URL}sarthe.geojson`): Promise<Centerline> {
   const res = await fetch(url);
   const fc = await res.json();
   const coords: [number, number][] = fc.features[0].geometry.coordinates;
